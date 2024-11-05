@@ -13,6 +13,33 @@ def save_theme(theme_config):
     with open(config_path, 'w') as f:
         toml.dump(config, f)
 
+def check_api_keys():
+    if 'ANTHROPIC_API_KEY' not in st.session_state:
+        st.session_state.ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY')
+    if 'OPENAI_API_KEY' not in st.session_state:
+        st.session_state.OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+
+    # Show API key input if either key is missing
+    if not st.session_state.ANTHROPIC_API_KEY or not st.session_state.OPENAI_API_KEY:
+        with st.form("api_keys"):
+            if not st.session_state.ANTHROPIC_API_KEY:
+                claude_key = st.text_input("Enter Claude API Key:", type="password")
+            if not st.session_state.OPENAI_API_KEY:
+                openai_key = st.text_input("Enter OpenAI API Key:", type="password")
+
+            if st.form_submit_button("Save Keys"):
+                if not st.session_state.ANTHROPIC_API_KEY and claude_key:
+                    st.session_state.ANTHROPIC_API_KEY = claude_key
+                if not st.session_state.OPENAI_API_KEY and openai_key:
+                    st.session_state.OPENAI_API_KEY = openai_key
+                st.rerun()
+
+        # Stop further execution until keys are provided
+        st.stop()
+
+    return st.session_state.ANTHROPIC_API_KEY, st.session_state.OPENAI_API_KEY
+
+
 load_dotenv()
 
 # Constants
@@ -32,9 +59,11 @@ if "current_model" not in st.session_state:
 if "editing_message_index" not in st.session_state:
     st.session_state.editing_message_index = None
 
-# Initialize handlers
-claude_handler = ClaudeHandler(os.getenv('ANTHROPIC_API_KEY'))
-chatgpt_handler = ChatGPTHandler(os.getenv('OPENAI_API_KEY'))
+
+anthropic_key, openai_key = check_api_keys()
+
+claude_handler = ClaudeHandler(anthropic_key)
+chatgpt_handler = ChatGPTHandler(openai_key)
 
 # App title
 st.title("Interfazada 💃")
